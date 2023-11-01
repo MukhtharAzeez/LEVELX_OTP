@@ -22,6 +22,7 @@ const sendEmail = async (options) => {
         return new Promise((resolve, reject) => {
             transporter.sendMail(emailOptions, (err, info) => {
                 if (err) {
+                    console.log(err)
                     reject(false);
                 } else {
                     resolve(true);
