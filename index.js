@@ -1,17 +1,16 @@
 const express = require('express')
-const cookieParser = require("cookie-parser");
 const sessions = require('express-session');
 const dotenv = require('dotenv')
 const utils = require('./utils')
 const bodyParser = require('body-parser')
 const jwt = require('jsonwebtoken')
 
-const app = express()
-app.use(bodyParser.urlencoded({ extended: false }))
 
-// parse application/json
-app.use(bodyParser.json())
+const app = express()
 dotenv.config()
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
+
 app.use(
     sessions({
         secret: 'your-secret-key',
@@ -22,31 +21,36 @@ app.use(
 
 app.post('/send-otp', async (req, res) => {
     try {
-        const { email, subject, message } = req.body
+        const { email, subject, text } = req.body
         let options = {
             email,
             subject,
-            message
+            text
         }
         const status = await utils(options)
         if (status) res.status(200).json({ message: "Success" })
         else res.status(404).json({ message: "failed" })
     } catch (error) {
+        res.json(404).status({message: "Something is wrong"})
         console.log("error",error)
     }
 })
 
 app.post('/save-otp', (req, res) => {
-    req.session.otp = req.body.otp
-    res.status(200).json({ message: "otp saved" })
+    try {
+        req.session.otp = req.body.otp
+        res.status(200).json({ message: "otp saved" })
+    } catch (error) {
+        res.status(404).json({message:"Something is wrong"})
+    }
 })
 
 app.post('/verify-otp', (req, res) => {
     try {
         if (req.session.otp === req.body.otp) {
             const token = jwt.sign({ otp: req.body.otp }, 'secret-otp', { expiresIn: '10d' })
-            if (!token) res.json({ message: "error while creating token" })
-            else res.json({ token: token })
+            if (!token) res.status(200).json({ message: "error while creating token" })
+            else res.status(200).json({ token: token })
         } else {
             res.json({ message: "Otp is not valid" })
         }

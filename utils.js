@@ -1,37 +1,37 @@
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail')
+
+
+function generateOTP() {
+    // Generate a random 4-digit number
+    const min = 1000; 
+    const max = 9999; 
+    const otp = Math.floor(Math.random() * (max - min + 1)) + min;
+    return otp;
+}
+
 
 const sendEmail = async (options) => {
-    try {
-        const transporter = nodemailer.createTransport({
-            service: 'SendGrid',
-            auth: {
-                user: process.env.SENDGRID_USER,
-                pass: process.env.SENDGRID_PASS,
-            },
-        });
-
-        //2) Define email options
-        const emailOptions = {
-            from: `LevelX, <${process.env.EMAIL_ADDRESS}>`,
-            to: options.email,
-            subject: options.subject,
-            text: options.message,
+    const {email, subject, text} =  options
+    return new Promise((resolve, reject) => {
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+        const otp = generateOTP();
+        const msg = {
+            to: email,
+            from: process.env.SENDGRID_USER,
+            subject,
+            text: `${text} ${otp}`,
         };
-
-        //3) Send the email
-        return new Promise((resolve, reject) => {
-            transporter.sendMail(emailOptions, (err, info) => {
-                if (err) {
-                    console.log(err)
-                    reject(false);
-                } else {
-                    resolve(true);
-                }
+        sgMail
+            .send(msg)
+            .then((data) => {
+                // console.log('Email sent', data);
+                resolve(true); // Resolve the Promise when email is sent successfully
+            })
+            .catch((error) => {
+                // console.log('Error sending email', error);
+                reject(false); // Reject the Promise on error
             });
-        });
-    } catch (error) {
-        console.log("error",error)
-    }
+    });
 };
 
 module.exports = sendEmail; 
